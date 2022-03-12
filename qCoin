@@ -43,5 +43,5 @@ print('%s filter was selected' % picFilter.title())
 
 for picture in os.listdir(myDesktop / 'Original'):
     current_img = Image.open(myDesktop / 'Original' / picture)
-    print('%s was opened' % picture)
+    print('%s was edited' % picture)
     filterApply(picFilter, current_img, picture)
