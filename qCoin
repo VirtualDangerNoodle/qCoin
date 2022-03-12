@@ -5,13 +5,15 @@ from pathlib import Path
 import pyinputplus as pyip
 from PIL import Image, ImageEnhance
 
-filterDict = {'gold': [1, 1, 30], 'silver': [1, 2, 2]}
+# 'filtername' : [brightness, contrast, sharpness]
+filterDict = {'albr': [0.9, 1.50, 5], 'bimetal': [1.15, 1.5, 5], 'brass': [0.8, 1.25, 3],
+              'copper': [0.8, 1.35, 5], 'gold': [1, 1.5, 4], 'silver': [0.8, 1.6, 5]}
 
 
 # Edit depending on the filter
 def filterApply(filtername, img_file, name):
 
-    crop_img = current_img.crop((50, 20, 3500, 3500))
+    crop_img = current_img.crop((600, 20, 3500, 3500))
     # Filter values
     b, c, s = filterDict[filtername]
 
@@ -19,7 +21,7 @@ def filterApply(filtername, img_file, name):
     filter_cont = ImageEnhance.Contrast(filter_br.enhance(b))
     filter_sharp = ImageEnhance.Sharpness(filter_cont.enhance(c))
     final_img = filter_sharp.enhance(s)
-    final_img.save('/home/snek/Desktop/Edited/' + name)
+    final_img.save(myDesktop / 'Edited' / name)
 
 
 myDesktop = Path.home() / 'Desktop'
@@ -43,4 +45,3 @@ for picture in os.listdir(myDesktop / 'Original'):
     current_img = Image.open(myDesktop / 'Original' / picture)
     print('%s was opened' % picture)
     filterApply(picFilter, current_img, picture)
-
