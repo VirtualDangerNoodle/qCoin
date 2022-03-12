@@ -1,0 +1,46 @@
+#! python3
+
+import os
+from pathlib import Path
+import pyinputplus as pyip
+from PIL import Image, ImageEnhance
+
+filterDict = {'gold': [1, 1, 30], 'silver': [1, 2, 2]}
+
+
+# Edit depending on the filter
+def filterApply(filtername, img_file, name):
+
+    crop_img = current_img.crop((50, 20, 3500, 3500))
+    # Filter values
+    b, c, s = filterDict[filtername]
+
+    filter_br = ImageEnhance.Brightness(crop_img)
+    filter_cont = ImageEnhance.Contrast(filter_br.enhance(b))
+    filter_sharp = ImageEnhance.Sharpness(filter_cont.enhance(c))
+    final_img = filter_sharp.enhance(s)
+    final_img.save('/home/snek/Desktop/Edited/' + name)
+
+
+myDesktop = Path.home() / 'Desktop'
+
+# Check and make original/folders
+
+if 'Original' not in os.listdir(myDesktop):
+    os.makedirs(myDesktop / 'Original')
+if 'Edited' not in os.listdir(myDesktop):
+    os.makedirs(myDesktop / 'Edited')
+
+# Prompt to ask what filter to use
+
+picFilter = pyip.inputChoice(['AlBr', 'BiMetal', 'Brass', 'Copper', 'Gold', 'Silver']).lower()
+
+print('%s filter was selected' % picFilter.title())
+
+# Iterate, crop and add filter per image
+
+for picture in os.listdir(myDesktop / 'Original'):
+    current_img = Image.open(myDesktop / 'Original' / picture)
+    print('%s was opened' % picture)
+    filterApply(picFilter, current_img, picture)
+
