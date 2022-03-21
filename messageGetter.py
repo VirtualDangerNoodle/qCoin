@@ -5,6 +5,7 @@ import os.path
 from bs4 import BeautifulSoup
 import warnings
 import requests
+import xlsxwriter
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -72,8 +73,8 @@ def get_msgContent(message_id):
         for h in headers:
             if h['name'] == 'From':
                 sender = h['value']
-                body.append(sender)
-        return body
+                #body.append(sender)
+        return body, sender
     except HttpError as error:
         print(f'An error occurred: {error}')
 
@@ -99,14 +100,38 @@ def priceInspector(item_url):
         print(f'An error occurred: {error}')
 
 # ..MAIN..
-for mid in get_msgList():
-    price = 0
-    print('Processing ID Nº: %s \nClient: %s' % (mid, str(get_msgContent(mid)[-1])))
-    for url in get_msgContent(mid):
-        if 'offer' in url:
-            price = price + priceInspector(url)
-        if 'item' in url:
-            price = price + priceInspector(url)
-    print('Total price is %s Rub' % price)
+
+workbook = xlsxwriter.Workbook('/home/snek/Desktop/Test619.xlsx')
+
+for msg_id in get_msgList():
+
+    total = 0
+    row = 5
+    col = 1
+    msg_body, msg_header = get_msgContent(msg_id)
+    worksheet = workbook.add_worksheet(msg_header[:20])
+
+    worksheet.write('B2', 'Client Name')
+    worksheet.write('B3', 'Order ID')
+    worksheet.write('B4', 'Total')
+    worksheet.write('B5', 'Item')
+    worksheet.write('C5', 'Price')
+
+    for msg_url in msg_body:
+        if 'https:' not in msg_url:
+            del msg_url
+        else:
+            price = priceInspector(msg_url)
+            total = total + price
+
+            worksheet.write('C2', msg_header)
+            worksheet.write('C3', msg_id)
+
+            worksheet.write_string(row, col, msg_url)
+            worksheet.write_number(row, col + 1, price)
+            row += 1
+    worksheet.write('C4', total)
+    workbook.close()
 
 # TODO: Send all this data ^ into an Excel file. Have tick marks for products if in inventory/found
+
