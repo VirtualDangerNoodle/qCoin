@@ -2,6 +2,8 @@ from __future__ import print_function
 
 import base64
 import os.path
+from pathlib import Path
+
 from bs4 import BeautifulSoup
 import warnings
 import requests
@@ -18,7 +20,6 @@ warnings.filterwarnings('ignore', category=UserWarning, module='bs4')
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly',
           'https://www.googleapis.com/auth/gmail.labels']
-
 
 "Auth flow + Saves credentials in json"
 creds = None
@@ -53,12 +54,11 @@ def get_msgList():
         print(f'An error occurred: {error}')
 
 
-
 def get_msgContent(message_id):
     # Retrieves message body + header
     try:
         service = build('gmail', 'v1', credentials=creds)
-        results = service.users().messages().get(userId='me', id=message_id, format='full').execute()   # JSON dict
+        results = service.users().messages().get(userId='me', id=message_id, format='full').execute()  # JSON dict
 
         payload = results['payload']
         headers = payload['headers']
@@ -73,8 +73,8 @@ def get_msgContent(message_id):
         for h in headers:
             if h['name'] == 'From':
                 sender = h['value']
-                #body.append(sender)
-        return body, sender
+                body.append(sender)
+        return body
     except HttpError as error:
         print(f'An error occurred: {error}')
 
@@ -99,17 +99,14 @@ def priceInspector(item_url):
     except HttpError as error:
         print(f'An error occurred: {error}')
 
+
 # ..MAIN..
 
 workbook = xlsxwriter.Workbook('/home/snek/Desktop/Test619.xlsx')
 
-for msg_id in get_msgList():
-
+for mid in get_msgList():
     total = 0
-    row = 5
-    col = 1
-    msg_body, msg_header = get_msgContent(msg_id)
-    worksheet = workbook.add_worksheet(msg_header[:20])
+    worksheet = workbook.add_worksheet(str(get_msgContent(mid)[-1][:20]))
 
     worksheet.write('B2', 'Client Name')
     worksheet.write('B3', 'Order ID')
@@ -117,21 +114,24 @@ for msg_id in get_msgList():
     worksheet.write('B5', 'Item')
     worksheet.write('C5', 'Price')
 
-    for msg_url in msg_body:
-        if 'https:' not in msg_url:
-            del msg_url
-        else:
-            price = priceInspector(msg_url)
+    row = 5
+    col = 1
+
+    for url in get_msgContent(mid):
+        if 'offer' in url:
+            price = priceInspector(url)
             total = total + price
-
-            worksheet.write('C2', msg_header)
-            worksheet.write('C3', msg_id)
-
-            worksheet.write_string(row, col, msg_url)
+            worksheet.write_url(row, col, url)
             worksheet.write_number(row, col + 1, price)
             row += 1
-    worksheet.write('C4', total)
+        if 'item' in url:
+            price = priceInspector(url)
+            total = total + price
+            worksheet.write_string(row, col, url)
+            worksheet.write_number(row, col + 1, price)
+            row += 1
     workbook.close()
+    print('Total price is %s Rub' % total)
+
 
 # TODO: Send all this data ^ into an Excel file. Have tick marks for products if in inventory/found
-
